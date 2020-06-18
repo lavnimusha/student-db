@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+        <style>
+            body{
+                background-attachment: fixed;
+                background-image: url("https://study.com/cimages/multimages/16/adobestock_93398314.jpeg");
+                background-size: cover;
+
+            }
+            .studentdb{
+                position: relative;
+                left: 20%;
+                
+            }
+            table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 50%;
+            margin: 5px; 
+            }
+
+            td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+            }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+
+
+
+        form{
+            width: 50%;
+            padding: 5px;
+            background-color: yellowgreen;
+        }
+        
+        
+        </style>
+
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <div class="studentdb">
+            <h1 style="color: white">Student Data</h1>
+                <table id = "tab">
+                        <tr>
+                          <th>Firstname</th> 
+                          <th>Age</th>
+                        </tr>
+                        <tr>
+                          <td>Jill</td>
+                          <td>50</td>
+                        </tr>
+                        
+                      </table>
+                <form action="">
+                    <label for="fname">First name:</label>
+                    <input type="text" id="fname" name="fname"><br><br>
+                    <label for="roll">Roll No.:</label>
+                    <input type="text" id="roll" name="rollno"><br><br>
+                    <input type="submit" value="Submit">
+                </form>
+        </div>
+        <script>
+        window.onload = function(){
+            const form = document.querySelector('form');
+            const ipName = document.getElementById('fname');
+            const ipRoll = document.getElementById('roll');
+            const mytable = document.getElementById('tab');
+            let db;
+            let request = window.indexedDB.open('student', 1);
+            request.onerror = function() {
+                console.log('Database failed to open');
+            };
+            request.onsuccess =function(){
+                console.log("DB opened successfully");
+                db = request.result;
+                display();
+            };
+            request.onupgradeneeded = function(e){
+                let db = e.target.result;
+                let objectStore = db.createObjectStore('studentdb',{keyPath: 'id', autoIncrement: true});
+                objectStore.createIndex('name', 'name', { unique: false });
+                objectStore.createIndex('roll', 'roll', { unique: true });
+
+                console.log('Database setup complete');
+            };
+            form.onsubmit = addData;
+            function addData(e){
+                e.preventDefault();
+                let newItem = {name: ipName.value,roll: ipRoll.value}
+                let transaction = db.transaction(['studentdb'], 'readwrite');
+                let objectStore = transaction.objectStore('studentdb');
+                let request = objectStore.add(newItem);
+                request.onsuccess = function() {
+                // Clear the form, ready for adding the next entry
+                ipName.value = '';
+                ipRoll.value = '';
+                };
+                transaction.oncomplete = function() {
+                    console.log('Transaction completed: database modification finished.');
+
+                    // update the display of data to show the newly added item, by running displayData() again.
+                    updateUi(newItem);
+                };
+
+                transaction.onerror = function() {
+                    console.log('Transaction not opened due to error');
+                };
+            }
+            function display(){
+                
+                let objectStore = db.transaction('studentdb').objectStore('studentdb');
+                objectStore.openCursor().onsuccess = function(e) {
+                    
+
+                let cursor = e.target.result;
+                console.log(cursor);
+                if(cursor) {
+                    
+                var row = mytable.insertRow(-1);
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                cell1.innerHTML = cursor.value.name;
+                cell2.innerHTML = cursor.value.roll;
+
+                cursor.continue();
+                }
+                else{
+                    
+                    console.log('thats all');}
+            };
+        }
+        function updateUi(item){
+            console.log(item);
+                var row = mytable.insertRow(-1);
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                cell1.innerHTML = item.name;
+                cell2.innerHTML = item.roll;
+        }
+    }
+
+        </script>
+    </body>
+</html>
